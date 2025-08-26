@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkStore 🎮 - Sua Loja de Jogos de PC</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a; /* Fundo escuro similar ao GameHub */
+            color: #e6edf3; /* Texto claro */
+            /* Imagem de fundo corrigida */
+            background-image: url('https://media.discordapp.net/attachments/1299109316577464401/1409750750271115265/ChatGPT_Image_26_de_ago._de_2025_01_06_01.png?ex=68ae8432&is=68ad32b2&hm=bb6f33c00f2b0bfa20f113b8870f61b2f75b5b765931baa23b3a79bf48f12954&=&format=webp&quality=lossless&width=1376&height=917'); /* URL de imagem de fundo atualizada */
+            background-size: cover; /* Faz a imagem cobrir todo o fundo */
+            background-attachment: fixed; /* Fixa a imagem no lugar enquanto o conteúdo rola */
+            background-position: center; /* Centraliza a imagem */
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Efeito de hover mais sutil para os cards */
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(128, 0, 128, 0.1), 0 4px 6px -2px rgba(128, 0, 128, 0.05); /* Sombra sutil com tom roxo */
+        }
+        /* Estilo para ocultar e mostrar páginas */
+        .page-section {
+            display: none;
+        }
+        .page-section.active {
+            display: block;
+        }
+
+        /* Animações Tailwind */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-down {
+            animation: fadeInDown 0.5s ease-out forwards;
+        }
+
+        /* Estilo para o modal de carrinho e QR Code */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex; /* Mostra o modal quando tem a classe 'active' */
+        }
+
+        .modal-content {
+            background-color: #1f2125;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px; /* Largura padrão do modal */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        /* Ajuste para o modal do QR Code ser maior */
+        #qr-modal .modal-content {
+            max-width: 768px; /* Exemplo de largura maior (Tailwind 'xl') */
+            padding: 30px;
+        }
+
+        /* Ajuste para o modal do chat ser de largura média */
+        #chat-modal .modal-content {
+            max-width: 500px; /* Largura média para o chat */
+            padding: 25px;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #8a2be2;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Animação para a seção de herói */
+        @keyframes fadeInFromBottom {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInFromBottom 0.8s ease-out forwards;
+        }
+        .animate-fade-in-up.delay-200 { animation-delay: 0.2s; }
+        .animate-fade-in-up.delay-400 { animation-delay: 0.4s; }
+        
+        /* Estilos para o QR code */
+        #qrcode-display-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #2d3035;
+            border-radius: 8px;
+        }
+        /* Esconde as imagens do QR Code por padrão */
+        .qrcode-static-image {
+            display: none;
+            background-color: #e6edf3; /* Fundo branco para a imagem do QR code */
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Header -->
+    <header class="bg-[#1f2125] shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#home-page" class="text-3xl font-bold text-[#8a2be2] rounded-lg p-1 transition-colors duration-300">
+                DarkStore 🎮
+            </a>
+
+            <!-- Barra de Pesquisa (Desktop) -->
+            <div class="relative flex-grow mx-4 hidden md:block max-w-lg">
+                <input type="text" id="desktop-search-input" placeholder="Pesquisar jogos..." class="w-full bg-[#2d3035] text-gray-200 rounded-full py-2.5 pl-5 pr-12 focus:outline-none focus:ring-2 focus:ring-[#8a2be2] border border-transparent hover:border-[#8a2be2] transition-all duration-300">
+                <svg class="absolute right-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <!-- Ícones (Carrinho e Usuário) -->
+            <div class="flex items-center space-x-4">
+                <!-- Ícone de Carrinho -->
+                <button id="cart-button" class="relative text-gray-300 hover:text-[#8a2be2] transition-colors duration-300">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <span id="cart-item-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <!-- Ícone de Usuário (apenas visual, sem funcionalidade de login) -->
+                <a href="#" class="text-gray-300 hover:text-[#8a2be2] transition-colors duration-300 hidden md:block">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                </a>
+                <!-- Botão de Menu Mobile -->
+                <button id="mobile-menu-button" class="md:hidden text-gray-300 hover:text-[#8a2be2] transition-colors duration-300">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Mobile (oculto por padrão) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-[#1f2125] py-2">
+            <ul class="flex flex-col items-center space-y-2">
+                <li><a href="#home-page" class="block text-gray-300 hover:text-[#8a2be2] py-2 text-lg">Início</a></li>
+                <li><button id="mobile-cart-button" class="block text-gray-300 hover:text-[#8a2be2] py-2 text-lg">Carrinho</button></li>
+                <li><a href="#contact-page" class="block text-gray-300 hover:text-[#8a2be2] py-2 text-lg">Contato</a></li>
+                <li>
+                    <div class="relative w-full flex justify-center mt-2">
+                        <input type="text" id="mobile-search-input" placeholder="Pesquisar..." class="bg-[#2d3035] text-gray-200 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#8a2be2] w-64">
+                        <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <main class="py-8">
+        <!-- Secção de Destaque/Herói (Página Inicial) -->
+        <section id="home-page" class="page-section container mx-auto px-4 mb-12 relative overflow-hidden rounded-xl shadow-xl active">
+            <!-- A URL da imagem de fundo foi atualizada para a imagem preta que você forneceu! -->
+            <div class="relative w-full h-80 md:h-96 lg:h-[450px] bg-[url('https://img.freepik.com/fotos-gratis/grunge-fundo-de-concreto-de-textura-preta_53876-124541.jpg?semt=ais_hybrid&w=740&q=80')] bg-cover bg-center rounded-xl flex items-center justify-center text-white">
+                <!-- Adicionado novamente o overlay preto -->
+                <div class="absolute inset-0 bg-black opacity-60 rounded-xl"></div>
+                <div class="relative z-10 text-center p-4">
+                    <!-- Textos re-adicionados sem classes de sombra duplicada -->
+                    <h1 class="text-4xl md:text-5xl lg:text-7xl font-extrabold leading-tight mb-4 animate-fade-in-up">
+                        Sua Aventura Começa Aqui!
+                    </h1>
+                    <p class="text-lg md:text-xl mb-8 text-gray-300 animate-fade-in-up delay-200">
+                        Descubra os melhores jogos de PC na DarkStore 🎮.
+                    </p>
+                    <a href="#all-games-section" class="inline-block bg-[#8a2be2] hover:bg-[#6a1cb5] text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 animate-fade-in-up delay-400">
+                        Ver Todos os Jogos
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Secção de Todos os Jogos -->
+        <section id="all-games-section" class="page-section container mx-auto px-4 py-12 active">
+            <h2 class="text-4xl font-bold text-center mb-10 text-[#8a2be2]">Todos os Jogos</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="game-list">
+                <!-- Cartão de Jogo: Undertale (R$ 4,90) -->
+                <div class="game-card bg-[#1f2125] rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-[#8a2be2]" data-name="Undertale" data-price-category="4.90">
+                    <img src="https://assets.nintendo.com/image/upload/q_auto/f_auto/ncom/software/switch/70010000009921/44bea8c565db26c0c470a6325a47c9ea031633945cb91e4b5e1b1a39b01a2cdb" alt="Capa do Jogo Undertale" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-white">Undertale</h3>
+                        <p class="text-gray-400 mb-4 text-sm">Um RPG único onde você pode escolher lutar ou poupar monstros.</p>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-2xl font-bold text-[#8a2be2]">R$ 4,90</span>
+                            <span class="text-yellow-400 flex items-center">
+                                <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path></svg>
+                                4.9
+                            </span>
+                        </div>
+                        <button class="add-to-cart-btn w-full bg-[#8a2be2] hover:bg-[#6a1cb5] text-white font-bold py-3 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-300"
+                                data-name="Undertale" data-price="4.90" data-image-url="https://assets.nintendo.com/image/upload/q_auto/f_auto/ncom/software/switch/70010000009921/44bea8c565db26c0c470a6325a47c9ea031633945cb91e4b5e1b1a39b01a2cdb">
+                            Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cartão de Jogo: Hollow Knight (R$ 4,90) -->
+                <div class="game-card bg-[#1f2125] rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-[#8a2be2]" data-name="Hollow Knight" data-price-category="4.90">
+                    <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/capsule_616x353.jpg?t=1695270428" alt="Capa do Jogo Hollow Knight" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-white">Hollow Knight</h3>
+                        <p class="text-gray-400 mb-4 text-sm">Aventure-se num mundo de insetos e heróis neste aclamado Metroidvania.</p>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-2xl font-bold text-[#8a2be2]">R$ 4,90</span>
+                            <span class="text-yellow-400 flex items-center">
+                                <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path></svg>
+                                4.8
+                            </span>
+                        </div>
+                        <button class="add-to-cart-btn w-full bg-[#8a2be2] hover:bg-[#6a1cb5] text-white font-bold py-3 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-300"
+                                data-name="Hollow Knight" data-price="4.90" data-image-url="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/capsule_616x353.jpg?t=1695270428">
+                            Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cartão de Jogo: Cuphead (R$ 9,90) -->
+                <div class="game-card bg-[#1f2125] rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-[#8a2be2]" data-name="Cuphead" data-price-category="9.90">
+                    <img src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/268910/header.jpg?t=1709068852" alt="Capa do Jogo Cuphead" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2 text-white">Cuphead</h3>
+                        <p class="text-gray-400 mb-4 text-sm">Um jogo de ação e plataforma com estilo de desenho animado clássico dos anos 30.</p>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-2xl font-bold text-[#8a2be2]">R$ 9,90</span>
+                            <span class="text-yellow-400 flex items-center">
+                                <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path></svg>
+                                4.7
+                            </span>
+                        </div>
+                        <button class="add-to-cart-btn w-full bg-[#8a2be2] hover:bg-[#6a1cb5] text-white font-bold py-3 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-300"
+                                data-name="Cuphead" data-price="9.90" data-image-url="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/268910/header.jpg?t=1709068852">
+                            Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal do Carrinho de Compras -->
+    <div id="cart-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-cart-modal">&times;</span>
+            <h2 class="text-3xl font-bold text-[#8a2be2] mb-6">Seu Carrinho de Compras</h2>
+            <div id="cart-items" class="space-y-4">
+                <!-- Itens do carrinho serão inseridos aqui pelo JavaScript -->
+                <p id="empty-cart-message" class="text-gray-400 text-center">Seu carrinho está vazio.</p>
+            </div>
+            <div class="mt-8 pt-4 border-t border-gray-700 flex justify-between items-center">
+                <span class="text-2xl font-bold text-white">Total: <span id="cart-total" class="text-[#8a2be2]">R$ 0,00</span></span>
+                <button id="checkout-button" class="bg-[#8a2be2] hover:bg-[#6a1cb5] text-white font-bold py-3 px-6 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-300">
+                    Finalizar Compra
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do QR Code de Pagamento -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-qr-modal">&times;</span>
+            <h2 class="text-3xl font-bold text-[#8a2be2] mb-6 text-center">Pagamento via QR Code</h2>
+            <div id="qrcode-display-area" class="flex flex-col items-center justify-center p-4 bg-[#2d3035] rounded-lg">
+                <p class="text-gray-400 mb-4 text-xl">Valor Total: <span id="qr-total-amount" class="font-bold text-[#8a2be2]">R$ 0,00</span></p>
+                <p class="text-gray-400 mb-4">Escaneie o QR Code para pagar:</p>
+                
+                <!-- Imagem do QR Code para jogos de R$ 4,90 -->
+                <img id="qrcode-490-image" 
+                     src="https://media.discordapp.net/attachments/1299109316577464401/1409740533596815411/Captura_de_tela_2025-08-26_001318.png?ex=68ae7aae&is=68ad292e&hm=ddf829befd284629f44e7b81046888f133a33e63708c5f46a049f412797244d5&=&format=webp&quality=lossless" 
+                     alt="QR Code para R$ 4,90" 
+                     class="qrcode-static-image w-64 h-64 object-contain rounded-md p-2" 
+                     onerror="this.onerror=null;this.src='https://placehold.co/256x256/1f2125/e6edf3?text=Erro+QR+4,90';">
+                
+                <!-- Imagem do QR Code para jogos de R$ 9,90 -->
+                <img id="qrcode-990-image" 
+                     src="https://media.discordapp.net/attachments/1299109316577464401/1409749512771080303/image.png?ex=68ae830b&is=68ad318b&hm=8f09807e466cf201c10c987bf48793c31782a0fcb778aa759fe38b1802965089&=&format=webp&quality=lossless" 
+                     alt="QR Code para R$ 9,90" 
+                     class="qrcode-static-image w-64 h-64 object-contain rounded-md p-2" 
+                     onerror="this.onerror=null;this.src='https://placehold.co/256x256/1f2125/e6edf3?text=Erro+QR+9,90';">
+                
+                <p class="text-sm text-gray-500 mt-4 text-center"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do Chat Pós-Compra -->
+    <div id="chat-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-chat-modal">&times;</span>
+            <h2 class="text-3xl font-bold text-[#8a2be2] mb-6 text-center">Seu Jogo Está Pronto!</h2>
+            <div class="flex flex-col items-center justify-center p-4 bg-[#2d3035] rounded-lg">
+                <img id="chat-game-image" src="" alt="Capa do Jogo Comprado" class="w-48 h-auto object-contain rounded-md mb-4">
+                <p id="chat-message" class="text-gray-200 text-lg text-center leading-relaxed">
+                    Mande uma foto desse chat e o comprovante do pagamento no pv do darkstore no discord.
+                    Obrigado pela preferência!
+                </p>
+            </div>
+            <button id="close-chat-final-button" class="mt-8 w-full bg-[#8a2be2] hover:bg-[#6a1cb5] text-white font-bold py-3 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-300">
+                Entendi!
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-[#1f2125] text-gray-400 py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 DarkStore 🎮. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Funcionalidade do menu mobile
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Funcionalidade da barra de pesquisa
+        const desktopSearchInput = document.getElementById('desktop-search-input');
+        const mobileSearchInput = document.getElementById('mobile-search-input');
+        const gameListContainer = document.getElementById('game-list');
+        const gameCards = document.querySelectorAll('.game-card'); // Obtém todos os cartões de jogo
+
+        // Função para filtrar os jogos
+        const filterGames = (searchTerm) => {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+            gameCards.forEach(card => {
+                const gameName = card.dataset.name.toLowerCase();
+                if (gameName.includes(lowerCaseSearchTerm)) {
+                    card.style.display = 'block'; // Mostra o cartão
+                } else {
+                    card.style.display = 'none'; // Esconde o cartão
+                }
+            });
+        };
+
+        // Adiciona event listeners para as barras de pesquisa
+        desktopSearchInput.addEventListener('keyup', (event) => {
+            filterGames(event.target.value);
+        });
+
+        mobileSearchInput.addEventListener('keyup', (event) => {
+            filterGames(event.target.value);
+        });
+
+        // Funcionalidade do carrinho de compras
+        const cartButton = document.getElementById('cart-button');
+        const mobileCartButton = document.getElementById('mobile-cart-button');
+        const cartModal = document.getElementById('cart-modal');
+        const closeCartModal = document.getElementById('close-cart-modal');
+        const cartItemCount = document.getElementById('cart-item-count');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartTotalElement = document.getElementById('cart-total');
+        const emptyCartMessage = document.getElementById('empty-cart-message');
+        const checkoutButton = document.getElementById('checkout-button');
+
+        // Referências para o novo modal de QR Code
+        const qrModal = document.getElementById('qr-modal');
+        const closeQrModalBtn = document.getElementById('close-qr-modal');
+        const qrcode490Image = document.getElementById('qrcode-490-image'); // Referência à tag <img> para 4.90
+        const qrcode990Image = document.getElementById('qrcode-990-image'); // Referência à tag <img> para 9.90
+        const qrTotalAmountElement = document.getElementById('qr-total-amount'); // Novo elemento para o total no modal QR
+
+        // Referências para o novo modal de Chat
+        const chatModal = document.getElementById('chat-modal');
+        const closeChatModalBtn = document.getElementById('close-chat-modal'); 
+        const chatGameImage = document.getElementById('chat-game-image'); 
+        const chatMessage = document.getElementById('chat-message'); 
+        const closeChatFinalButton = document.getElementById('close-chat-final-button');
+
+
+        let cart = []; // Array para armazenar os itens do carrinho
+
+        // Função para atualizar o carrinho no HTML
+        const updateCartUI = () => {
+            cartItemsContainer.innerHTML = ''; // Limpa os itens existentes
+            let total = 0;
+
+            if (cart.length === 0) {
+                emptyCartMessage.style.display = 'block';
+                checkoutButton.disabled = true; // Desabilita o botão se o carrinho estiver vazio
+                checkoutButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                emptyCartMessage.style.display = 'none';
+                checkoutButton.disabled = false; // Habilita o botão
+                checkoutButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                // Como só há um item no carrinho, ele é sempre o primeiro
+                const item = cart[0];
+                const itemElement = document.createElement('div');
+                itemElement.classList.add('flex', 'justify-between', 'items-center', 'bg-[#2d3035]', 'p-4', 'rounded-lg', 'shadow-sm');
+                itemElement.innerHTML = `
+                    <div>
+                        <p class="text-white font-semibold">${item.name}</p>
+                        <p class="text-gray-400 text-sm">R$ ${item.price.toFixed(2)} x ${item.quantity}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="remove-from-cart-btn bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded-full transition-colors duration-200" data-index="0">Remover</button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(itemElement);
+                total += item.price * item.quantity;
+            }
+
+            cartTotalElement.textContent = `R$ ${total.toFixed(2)}`;
+            cartItemCount.textContent = cart.length; // Atualiza o contador no cabeçalho
+        };
+
+        // Adicionar item ao carrinho
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const gameName = event.target.dataset.name;
+                const gamePrice = parseFloat(event.target.dataset.price);
+                const gamePriceCategory = event.target.closest('.game-card').dataset.priceCategory;
+                const gameImageUrl = event.target.dataset.imageUrl; // Obtém a URL da imagem do jogo
+
+                // Limpa o carrinho antes de adicionar o novo item para garantir apenas 1 jogo
+                cart = [];
+
+                // Adiciona o novo jogo com quantidade 1 e sua URL de imagem
+                cart.push({ name: gameName, price: gamePrice, quantity: 1, category: gamePriceCategory, imageUrl: gameImageUrl });
+
+                updateCartUI();
+                // Exibe uma mensagem amigável no lugar de alert()
+                const messageBox = document.createElement('div');
+                messageBox.classList.add('fixed', 'bottom-4', 'right-4', 'bg-green-600', 'text-white', 'px-4', 'py-2', 'rounded-md', 'shadow-lg', 'animate-fade-in-down');
+                messageBox.textContent = `${gameName} foi adicionado ao carrinho! (Carrinho com 1 jogo)`;
+                document.body.appendChild(messageBox);
+                setTimeout(() => {
+                    messageBox.remove();
+                }, 3000); // Remove a mensagem após 3 segundos
+            });
+        });
+
+        // Remover item do carrinho
+        cartItemsContainer.addEventListener('click', (event) => {
+            if (event.target.classList.contains('remove-from-cart-btn')) {
+                const indexToRemove = parseInt(event.target.dataset.index);
+                // Como só há 1 item, a remoção sempre esvazia o carrinho
+                cart.splice(indexToRemove, 1);
+                updateCartUI();
+            }
+        });
+
+        // Exibir a imagem do QR Code estática e abrir o modal
+        checkoutButton.addEventListener('click', () => {
+            if (cart.length === 0) {
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            // Verifica a categoria de preço do único item no carrinho
+            const singleItemCategory = cart[0].category;
+
+            // Oculta ambos os QR Codes primeiro
+            qrcode490Image.style.display = 'none';
+            qrcode990Image.style.display = 'none';
+
+            // Atualiza o valor total no modal do QR Code
+            qrTotalAmountElement.textContent = `R$ ${total.toFixed(2)}`;
+
+            if (singleItemCategory === '4.90') {
+                // Se o jogo é de R$ 4,90, exibe o QR Code de R$ 4,90
+                qrcode490Image.src = 'https://media.discordapp.net/attachments/1299109316577464401/1409740533596815411/Captura_de_tela_2025-08-26_001318.png?ex=68ae7aae&is=68ad292e&hm=ddf829befd284629f44e7b81046888f133a33e63708c5f46a049f412797244d5&=&format=webp&quality=lossless'; // <-- URL do QR Code para R$ 4,90
+                qrcode490Image.style.display = 'block';
+            } else if (singleItemCategory === '9.90') {
+                // Se o jogo é de R$ 9,90, exibe o QR Code de R$ 9,90
+                qrcode990Image.src = 'https://media.discordapp.net/attachments/1299109316577464401/1409749512771080303/image.png?ex=68ae830b&is=68ad318b&hm=8f09807e466cf201c10c987bf48793c31782a0fcb778aa759fe38b1802965089&=&format=webp&quality=lossless'; // <-- URL do QR Code para R$ 9,90
+                qrcode990Image.style.display = 'block';
+            }
+            
+            cartModal.classList.remove('active'); // Fecha o modal do carrinho
+            qrModal.classList.add('active'); // Abre o novo modal do QR Code
+        });
+
+
+        // Abrir/Fechar modal do carrinho
+        cartButton.addEventListener('click', () => {
+            cartModal.classList.add('active');
+            updateCartUI(); // Garante que o carrinho esteja atualizado ao abrir
+        });
+
+        mobileCartButton.addEventListener('click', () => {
+            cartModal.classList.add('active');
+            updateCartUI();
+            mobileMenu.classList.add('hidden'); // Fecha o menu mobile ao abrir o carrinho
+        });
+
+        closeCartModal.addEventListener('click', () => {
+            cartModal.classList.remove('active');
+            // Esconde todas as imagens do QR Code ao fechar o modal
+            qrcode490Image.style.display = 'none';
+            qrcode990Image.style.display = 'none';
+
+            // Após fechar o QR modal (simulando pagamento), abre o chat modal
+            if (cart.length > 0) {
+                const purchasedGame = cart[0];
+                chatGameImage.src = purchasedGame.imageUrl;
+                chatModal.classList.add('active');
+            }
+        });
+
+        // Fechar modal do QR Code
+        closeQrModalBtn.addEventListener('click', () => {
+            qrModal.classList.remove('active');
+            // Esconde todas as imagens do QR Code ao fechar o modal
+            qrcode490Image.style.display = 'none';
+            qrcode990Image.style.display = 'none';
+
+            // Após fechar o QR modal (simulando pagamento), abre o chat modal
+            if (cart.length > 0) {
+                const purchasedGame = cart[0];
+                chatGameImage.src = purchasedGame.imageUrl;
+                chatModal.classList.add('active');
+            }
+        });
+
+        // Fechar modal do Chat
+        closeChatModalBtn.addEventListener('click', () => { 
+            chatModal.classList.remove('active');
+            // Opcional: Esvaziar o carrinho após a finalização da compra no chat
+            cart = [];
+            updateCartUI();
+        });
+
+        closeChatFinalButton.addEventListener('click', () => {
+            chatModal.classList.remove('active');
+            // Opcional: Esvaziar o carrinho após a finalização da compra no chat
+            cart = [];
+            updateCartUI();
+        });
+
+        // Fechar qualquer modal ao clicar fora dele
+        window.addEventListener('click', (event) => {
+            if (event.target === cartModal) {
+                cartModal.classList.remove('active');
+            }
+            if (event.target === qrModal) {
+                qrModal.classList.remove('active');
+                // Esconde todas as imagens do QR Code ao fechar o modal
+                qrcode490Image.style.display = 'none';
+                qrcode990Image.style.display = 'none';
+
+                // Após fechar o QR modal (simulando pagamento), abre o chat modal
+                if (cart.length > 0) {
+                    const purchasedGame = cart[0];
+                    chatGameImage.src = purchasedGame.imageUrl;
+                    chatModal.classList.add('active');
+                }
+            }
+            if (event.target === chatModal) {
+                chatModal.classList.remove('active');
+                // Opcional: Esvaziar o carrinho após a finalização da compra no chat
+                cart = [];
+                updateCartUI();
+            }
+        });
+
+        // Initial UI update for cart
+        updateCartUI();
+    </script>
+</body>
+</html>
